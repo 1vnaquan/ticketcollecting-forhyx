@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>剧场票根 · 座位档案</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AD%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#131110;
+    --panel:#1b1714;
+    --panel-2:#201b17;
+    --line:rgba(233,220,199,.14);
+    --line-soft:rgba(233,220,199,.07);
+    --ink:#f2e9db;
+    --muted:#a99e8d;
+    --brass:#d8a84a;
+    --brass-soft:#e8c987;
+    --rust:#c86b4a;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    min-height:100vh;
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 520px at 8% -8%, rgba(216,168,74,.12), transparent 62%),
+      radial-gradient(900px 480px at 100% 0%, rgba(200,107,74,.09), transparent 58%),
+      var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{display:none !important}
+  ::selection{background:rgba(216,168,74,.3)}
+  .app{max-width:1180px;margin:0 auto;padding:44px 28px 64px}
+  .kicker{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--brass);margin:0 0 10px;
+  }
+  .hero-top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  h1{
+    font-family:Georgia,"Songti SC","STSong",serif;
+    font-size:clamp(30px,4.4vw,46px);font-weight:600;line-height:1.15;
+    margin:0;letter-spacing:.01em;
+  }
+  .sub{color:var(--muted);margin:14px 0 0;font-size:14.5px;line-height:1.75;max-width:620px}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap;padding-bottom:4px}
+  .hero{border-bottom:1px solid var(--line);padding-bottom:22px}
+  .tabs{display:flex;gap:2px;margin-top:24px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{
+    background:none;border:0;color:var(--muted);padding:12px 16px;
+    font:500 14px/1 inherit;cursor:pointer;position:relative;white-space:nowrap;transition:color .16s;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--ink)}
+  .tab.active::after{
+    content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;
+    background:var(--brass);border-radius:2px;
+  }
+  .view{padding-top:28px;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* buttons */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    font:500 13px/1 inherit;padding:11px 16px;border-radius:10px;
+    border:1px solid var(--line);background:transparent;color:var(--ink);
+    cursor:pointer;transition:border-color .16s, transform .16s, background .16s;
+    text-decoration:none;
+  }
+  .btn:hover{border-color:rgba(216,168,74,.55);transform:translateY(-1px)}
+  .btn.primary{background:var(--brass);border-color:var(--brass);color:#241a0b;font-weight:600}
+  .btn.primary:hover{background:#e6b757}
+  .btn.danger{color:#e2a08a;border-color:rgba(200,107,74,.35)}
+  .btn.danger:hover{border-color:rgba(200,107,74,.7)}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .btn.sm{padding:7px 11px;font-size:12px;border-radius:8px}
+  .icon-btn{
+    background:none;border:1px solid transparent;color:var(--muted);
+    font:12px/1 inherit;padding:6px 8px;border-radius:7px;cursor:pointer;transition:.15s;
+  }
+  .icon-btn:hover{color:var(--ink);border-color:var(--line);background:rgba(255,255,255,.03)}
+  .icon-btn:disabled{opacity:.3;cursor:not-allowed}
+  .link{background:none;border:0;color:var(--brass);font:12px/1 inherit;cursor:pointer;padding:4px 0}
+  .link:hover{color:var(--brass-soft)}
+  /* stats */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px}
+  .stat{
+    border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 16px;
+    background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.012));
+  }
+  .stat .num{font-family:Georgia,"Songti SC",serif;font-size:36px;line-height:1.1}
+  .stat .label{font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:.04em}
+  .stat.accent{border-color:rgba(216,168,74,.38)}
+  .stat.accent .num{color:var(--brass);font-size:22px;line-height:1.4}
+  /* panels */
+  .panel-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;margin-top:18px}
+  .panel{
+    border:1px solid var(--line);border-radius:var(--radius);padding:20px;
+    background:linear-gradient(170deg,rgba(255,255,255,.042),rgba(255,255,255,.01));
+    margin-top:18px;
+  }
+  .panel-grid .panel{margin-top:0}
+  .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .panel h2{font-family:Georgia,"Songti SC",serif;font-size:16px;margin:0;font-weight:600;letter-spacing:.02em}
+  .hint{font-size:12px;color:var(--muted)}
+  .bars{display:grid;gap:12px}
+  .bar{display:grid;grid-template-columns:128px 1fr 40px;gap:12px;align-items:center;font-size:13px}
+  .bar .name{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .track{height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+  .bar .fill{
+    display:block;height:100%;border-radius:99px;width:0;
+    background:linear-gradient(90deg,#b8862f,#e0b45c);
+    transition:width .7s cubic-bezier(.2,.8,.2,1);
+  }
+  .bar .n{text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .donut-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  #yearDonut{width:150px;height:150px;flex:none}
+  .legend{list-style:none;margin:0;padding:0;display:grid;gap:9px;font-size:12.5px;color:var(--muted);flex:1;min-width:150px}
+  .legend li{display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .legend .val{margin-left:auto;font-family:ui-monospace,Menlo,monospace;color:var(--ink);font-size:12px}
+  .recent{list-style:none;margin:0;padding:0}
+  .recent li{
+    display:grid;grid-template-columns:92px 1fr auto;gap:14px;align-items:baseline;
+    padding:12px 2px;
+  }
+  .recent li + li{border-top:1px dashed var(--line)}
+  .recent .date{font:12px ui-monospace,Menlo,monospace;color:var(--muted)}
+  .recent .show{font-family:Georgia,"Songti SC",serif;font-size:15.5px}
+  .recent .meta{font-size:12px;color:var(--muted);margin-top:4px}
+  .stars{color:var(--brass);letter-spacing:.14em;font-size:12px;white-space:nowrap}
+  /* toolbar & forms */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  input[type=search],input[type=text],input[type=date],input[type=number],select,textarea{
+    background:#171412;border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:10px 12px;font:13px/1.4 inherit;outline:none;
+    transition:border-color .16s, box-shadow .16s;min-height:40px;
+  }
+  input::placeholder,textarea::placeholder{color:#6f665a}
+  input:focus,select:focus,textarea:focus{border-color:rgba(216,168,74,.6);box-shadow:0 0 0 3px rgba(216,168,74,.12)}
+  input[type=search]{flex:1;min-width:220px;max-width:420px}
+  select{
+    cursor:pointer;appearance:none;padding-right:34px;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 17px,calc(100% - 13px) 17px;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  input[type=date]{color-scheme:dark}
+  .inline-form{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;
+    padding:18px;border:1px solid var(--line);border-radius:var(--radius);
+    background:rgba(255,255,255,.02);margin-bottom:18px;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .field label{font-size:12px;color:var(--muted)}
+  .field input,.field select,.field textarea{width:100%}
+  .form-actions{display:flex;gap:8px;grid-column:1/-1;margin-top:2px}
+  /* tables */
+  .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius)}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:780px}
+  thead th{
+    position:sticky;top:0;background:#1b1714;text-align:left;font-weight:500;
+    color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);
+    font-size:12px;letter-spacing:.03em;white-space:nowrap;user-select:none;
+  }
+  th[data-sort]{cursor:pointer}
+  th[data-sort]:hover{color:var(--ink)}
+  th .arrow{color:var(--brass);font-size:10px;margin-left:4px}
+  th.right{text-align:right}
+  tbody td{padding:13px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  tbody tr:hover{background:rgba(255,255,255,.028)}
+  tbody tr:last-child td{border-bottom:0}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;white-space:nowrap}
+  .show-title{font-family:Georgia,"Songti SC",serif;font-size:14px}
+  .seat-badge{
+    display:inline-flex;align-items:center;border:1px dashed rgba(216,168,74,.45);
+    color:var(--brass-soft);border-radius:7px;padding:3px 8px;font-size:12px;
+    font-family:ui-monospace,Menlo,monospace;white-space:nowrap;
+  }
+  td.note{color:var(--muted);max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .actions{display:flex;gap:2px;justify-content:flex-end;white-space:nowrap}
+  /* seat map */
+  .seat-summary{font-size:12.5px;color:var(--muted)}
+  .seat-summary b{color:var(--brass);font-family:ui-monospace,Menlo,monospace;font-weight:600}
+  .seatmap{
+    display:grid;gap:14px;margin:18px 0 0;padding:20px;
+    border:1px dashed rgba(216,168,74,.28);border-radius:var(--radius);
+    background:rgba(216,168,74,.03);
+  }
+  .seat-row{display:grid;grid-template-columns:132px 1fr;gap:14px;align-items:start}
+  .seat-row-label{
+    font:12px ui-monospace,Menlo,monospace;color:var(--muted);padding-top:9px;letter-spacing:.03em;
+  }
+  .seat-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .seat{
+    display:inline-flex;flex-direction:column;align-items:center;gap:1px;
+    min-width:52px;padding:6px 9px 5px;border:1px dashed rgba(216,168,74,.4);
+    border-radius:9px;background:rgba(216,168,74,.05);cursor:default;
+    transition:border-color .15s, transform .15s;
+  }
+  .seat:hover{border-color:var(--brass);transform:translateY(-2px)}
+  .seat .no{font:600 12px/1.2 ui-monospace,Menlo,monospace;color:var(--brass-soft)}
+  .seat .cnt{font-size:10px;color:var(--brass);line-height:1}
+  .seat.repeat{border-style:solid;background:rgba(216,168,74,.1)}
+  .seat-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:11.5px;color:var(--muted)}
+  .seat-legend span{display:inline-flex;align-items:center;gap:6px}
+  .seat-legend i{
+    width:16px;height:12px;border:1px dashed rgba(216,168,74,.5);border-radius:4px;display:inline-block;
+  }
+  .seat-legend i.solid{border-style:solid;background:rgba(216,168,74,.12)}
+  /* empty */
+  .empty{padding:34px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.9}
+  .empty strong{display:block;color:var(--ink);font-family:Georgia,"Songti SC",serif;font-size:16px;margin-bottom:6px;font-weight:600}
+  .empty .btn{margin-top:12px}
+  /* dialog */
+  dialog{
+    border:1px solid rgba(216,168,74,.25);border-radius:18px;background:#1c1815;
+    color:var(--ink);padding:0;width:min(640px,calc(100vw - 32px));
+    max-height:calc(100vh - 48px);overflow:auto;
+    box-shadow:0 40px 90px rgba(0,0,0,.65);
+  }
+  dialog::backdrop{background:rgba(8,7,6,.72);backdrop-filter:blur(4px)}
+  .dialog-head{
+    padding:22px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    position:sticky;top:0;background:#1c1815;z-index:2;
+  }
+  .dialog-head h2{font-family:Georgia,"Songti SC",serif;font-size:21px;margin:0;font-weight:600}
+  .dialog-body{padding:18px 24px 6px;display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+  .dialog-body .field.full{grid-column:1/-1}
+  .dialog-foot{
+    padding:12px 24px 22px;display:flex;justify-content:flex-end;gap:10px;align-items:center;
+  }
+  .form-error{grid-column:1/-1;color:#e2a08a;font-size:12px;min-height:16px;margin:0}
+  .close-x{
+    background:none;border:0;color:var(--muted);font-size:24px;line-height:1;
+    cursor:pointer;padding:2px 6px;border-radius:8px;
+  }
+  .close-x:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+  /* misc */
+  .foot{
+    margin-top:48px;padding-top:18px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,18px);
+    background:#26201b;border:1px solid rgba(216,168,74,.38);color:var(--ink);
+    padding:11px 20px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;
+    transition:opacity .22s, transform .22s;z-index:80;box-shadow:0 18px 40px rgba(0,0,0,.45);
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .export-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  textarea#exportPreview{
+    width:100%;min-height:180px;font:12px/1.7 ui-monospace,Menlo,monospace;
+    resize:vertical;background:#151210;
+  }
+  @media (max-width: 900px){
+    .panel-grid{grid-template-columns:1fr}
+  }
+  @media (max-width: 720px){
+    .app{padding:28px 16px 48px}
+    .bar{grid-template-columns:96px 1fr 32px;font-size:12px}
+    .recent li{grid-template-columns:80px 1fr}
+    .recent .stars{grid-column:2}
+    .seat-row{grid-template-columns:1fr;gap:6px}
+    .seat-row-label{padding-top:0}
+    .dialog-body{grid-template-columns:1fr}
+    .hero-actions{width:100%}
+    .hero-actions .btn{flex:1}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <div class="hero-top">
+      <div>
+        <p class="kicker">Theater Ticket Archive · 北京</p>
+        <h1>剧场票根 · 座位档案</h1>
+        <p class="sub">把每一张票根变成一条记忆：哪一天、在哪座剧场、看了什么戏、坐在哪个位置。搜索票根，就能看见你在这座剧场坐过的每一处座位。</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn" id="btnExport" type="button">导出备份</button>
+        <button class="btn primary" id="btnAdd" type="button">＋ 记一张票根</button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="视图">
+      <button class="tab active" role="tab" data-view="overview" aria-selected="true">总览</button>
+      <button class="tab" role="tab" data-view="records" aria-selected="false">票根库</button>
+      <button class="tab" role="tab" data-view="seats" aria-selected="false">座位档案</button>
+      <button class="tab" role="tab" data-view="theaters" aria-selected="false">剧场库</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 总览 -->
+    <section class="view" id="view-overview">
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="panel-grid">
+        <section class="panel">
+          <div class="panel-head"><h2>各剧场观剧场次</h2><span class="hint">按场次排序</span></div>
+          <div class="bars" id="theaterBars"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>年份分布</h2><span class="hint">按票根日期</span></div>
+          <div class="donut-wrap">
+            <svg id="yearDonut" viewBox="0 0 140 140" role="img" aria-label="年份分布环形图"></svg>
+            <ul class="legend" id="yearLegend"></ul>
+          </div>
+        </section>
+      </div>
+      <section class="panel">
+        <div class="panel-head">
+          <h2>最近的票根</h2>
+          <button class="link" type="button" data-go="records">查看全部 →</button>
+        </div>
+        <ul class="recent" id="recentList"></ul>
+      </section>
+    </section>
+
+    <!-- 票根库 -->
+    <section class="view" id="view-records" hidden>
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="搜索剧名、剧场、日期或座位号…" autocomplete="off">
+        <select id="theaterFilter" aria-label="按剧场筛选"></select>
+        <button class="btn primary" id="btnAdd2" type="button">＋ 新增票根</button>
+      </div>
+      <div class="table-wrap">
+        <table id="recordsTable">
+          <thead>
+            <tr>
+              <th data-sort="date">观剧日期<span class="arrow"></span></th>
+              <th data-sort="theater">剧场<span class="arrow"></span></th>
+              <th data-sort="show">剧目<span class="arrow"></span></th>
+              <th>座位</th>
+              <th data-sort="price">票价<span class="arrow"></span></th>
+              <th data-sort="rating">评分<span class="arrow"></span></th>
+              <th>备注</th>
+              <th class="right">操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="recordsCount" style="margin:12px 2px 0"></p>
+    </section>
+
+    <!-- 座位档案 -->
+    <section class="view" id="view-seats" hidden>
+      <div class="toolbar">
+        <select id="seatTheater" aria-label="选择剧场"></select>
+        <span class="seat-summary" id="seatSummary"></span>
+      </div>
+      <div id="seatMapWrap"></div>
+      <p class="seat-legend" id="seatLegend">
+        <span><i></i>坐过一次</span>
+        <span><i class="solid"></i>坐过多次（角标为次数）</span>
+      </p>
+      <div class="table-wrap" id="seatTableWrap" style="margin-top:18px">
+        <table id="seatTable">
+          <thead>
+            <tr>
+              <th>观剧日期</th>
+              <th>剧目</th>
+              <th>座位</th>
+              <th>票价</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody id="seatBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 剧场库 -->
+    <section class="view" id="view-theaters" hidden>
+      <div class="toolbar">
+        <button class="btn" id="btnAddTheater" type="button">＋ 添加剧场</button>
+        <span class="hint">北京常用剧场已内置；外埠或新开剧场可手动添加。</span>
+      </div>
+      <form class="inline-form" id="theaterForm" hidden>
+        <div class="field">
+          <label for="thName">剧场名称</label>
+          <input id="thName" type="text" placeholder="如：上海大剧院" required>
+        </div>
+        <div class="field">
+          <label for="thCity">城市</label>
+          <input id="thCity" type="text" value="北京">
+        </div>
+        <div class="field">
+          <label for="thArea">区域</label>
+          <input id="thArea" type="text" placeholder="如：西城区">
+        </div>
+        <div class="field">
+          <label for="thType">类型</label>
+          <select id="thType">
+            <option>综合剧场</option>
+            <option>话剧</option>
+            <option>歌剧</option>
+            <option>音乐剧</option>
+            <option>小剧场</option>
+            <option>音乐厅</option>
+            <option>喜剧</option>
+            <option>戏曲</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" type="submit" id="thSubmit">保存剧场</button>
+          <button class="btn" type="button" id="thCancel">取消</button>
+        </div>
+      </form>
+      <div class="table-wrap">
+        <table id="theaterTable">
+          <thead>
+            <tr>
+              <th>剧场</th>
+              <th>城市 · 区域</th>
+              <th>类型</th>
+              <th>场次</th>
+              <th>座位数</th>
+              <th>最近一次</th>
+              <th class="right">操作</th>
+            </tr>
+          </thead>
+          <tbody id="theaterBody"></tbody>
+        </table>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head"><h2>备份、导出与文本提取</h2><span class="hint">数据保存在本机浏览器</span></div>
+        <div class="export-actions">
+          <button class="btn" id="btnDownloadJson" type="button">下载 JSON 备份</button>
+          <button class="btn" id="btnDownloadText" type="button">下载汇总文本</button>
+          <button class="btn" id="btnCopyText" type="button">复制汇总文本</button>
+          <label class="btn" for="importInput">导入备份</label>
+          <input id="importInput" type="file" accept="application/json,.json" hidden>
+          <button class="btn danger" id="btnReset" type="button">恢复示例数据</button>
+        </div>
+        <textarea id="exportPreview" readonly aria-label="汇总文本预览"></textarea>
+      </section>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>数据保存在浏览器本地（localStorage），换浏览器或清缓存前请先导出备份。</span>
+    <span>示例数据可直接编辑、删除。</span>
+  </footer>
+</div>
+
+<dialog id="ticketDialog">
+  <form id="ticketForm" novalidate>
+    <div class="dialog-head">
+      <div>
+        <p class="kicker" style="margin-bottom:6px">Ticket</p>
+        <h2 id="ticketDialogTitle">新增票根</h2>
+      </div>
+      <button class="close-x" type="button" id="ticketClose" aria-label="关闭">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="field">
+        <label for="tDate">观剧日期</label>
+        <input id="tDate" type="date" required>
+      </div>
+      <div class="field">
+        <label for="tTheater">剧场</label>
+        <select id="tTheater" required></select>
+      </div>
+      <div class="field full">
+        <label for="tShow">剧目</label>
+        <input id="tShow" type="text" placeholder="如：茶馆" required>
+      </div>
+      <div class="field">
+        <label for="tFloor">楼层 / 区域</label>
+        <select id="tFloor">
+          <option>池座</option>
+          <option selected>一层</option>
+          <option>二层</option>
+          <option>三层</option>
+          <option>四层</option>
+          <option>楼座</option>
+          <option>包厢</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tRating">评分</label>
+        <select id="tRating">
+          <option value="5">★★★★★</option>
+          <option value="4">★★★★</option>
+          <option value="3">★★★</option>
+          <option value="2">★★</option>
+          <option value="1">★</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tRow">排</label>
+        <input id="tRow" type="number" min="1" step="1" value="1" required>
+      </div>
+      <div class="field">
+        <label for="tSeat">座位号</label>
+        <input id="tSeat" type="number" min="1" step="1" value="1" required>
+      </div>
+      <div class="field">
+        <label for="tPrice">票价（元）</label>
+        <input id="tPrice" type="number" min="0" step="10" placeholder="280">
+      </div>
+      <div class="field full">
+        <label for="tNote">备注</label>
+        <input id="tNote" type="text" placeholder="同场人、版本、视角感受…">
+      </div>
+      <p class="form-error" id="ticketError"></p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" type="button" id="ticketCancel">取消</button>
+      <button class="btn primary" type="submit">保存票根</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'theater-ticket-archive-v1';
+  var COLORS = ['#d8a84a', '#c86b4a', '#8a9a6b', '#6f8ea8', '#b98bb0', '#9c8b6b'];
+  var FLOOR_ORDER = { '池座': 0, '一层': 1, '二层': 2, '三层': 3, '四层': 4, '楼座': 5, '包厢': 6, '其他': 9 };
+
+  var SEED = {
+    theaters: [
+      { id: 't1', name: '国家大剧院', city: '北京', area: '西城区', type: '综合剧场' },
+      { id: 't2', name: '保利剧院', city: '北京', area: '东城区', type: '综合剧场' },
+      { id: 't3', name: '天桥艺术中心', city: '北京', area: '西城区', type: '综合剧场' },
+      { id: 't4', name: '首都剧场', city: '北京', area: '东城区', type: '话剧' },
+      { id: 't5', name: '蜂巢剧场', city: '北京', area: '东城区', type: '小剧场' },
+      { id: 't6', name: '鼓楼西剧场', city: '北京', area: '西城区', type: '小剧场' },
+      { id: 't7', name: '繁星戏剧村', city: '北京', area: '西城区', type: '小剧场' },
+      { id: 't8', name: '中间剧场', city: '北京', area: '海淀区', type: '综合剧场' },
+      { id: 't9', name: '蓬蒿剧场', city: '北京', area: '东城区', type: '小剧场' },
+      { id: 't10', name: '中山公园音乐堂', city: '北京', area: '东城区', type: '音乐厅' },
+      { id: 't11', name: '北京喜剧院', city: '北京', area: '东城区', type: '喜剧' },
+      { id: 't12', name: '世纪剧院', city: '北京', area: '朝阳区', type: '综合剧场' },
+      { id: 't13', name: '天桥剧场', city: '北京', area: '西城区', type: '综合剧场' },
+      { id: 't14', name: '国家话剧院剧场', city: '北京', area: '西城区', type: '话剧' },
+      { id: 't15', name: '长安大戏院', city: '北京', area: '东城区', type: '戏曲' },
+      { id: 't16', name: '梅兰芳大剧院', city: '北京', area: '西城区', type: '戏曲' },
+      { id: 't17', name: '北京音乐厅', city: '北京', area: '西城区', type: '音乐厅' },
+      { id: 't18', name: '国图艺术中心', city: '北京', area: '海淀区', type: '音乐厅' },
+      { id: 't19', name: '北展剧场', city: '北京', area: '西城区', type: '综合剧场' },
+      { id: 't20', name: '大麦超剧场', city: '北京', area: '东城区', type: '小剧场' }
+    ],
+    records: [
+      { id: 'r1', date: '2023-06-20', theaterId: 't4', show: '茶馆', floor: '一层', row: 6, seatNo: 12, price: 280, rating: 5, note: '焦菊隐版复排' },
+      { id: 'r2', date: '2023-09-16', theaterId: 't7', show: '奋不顾身的爱情', floor: '一层', row: 5, seatNo: 11, price: 180, rating: 4, note: '小剧场近距离' },
+      { id: 'r3', date: '2023-11-03', theaterId: 't2', show: '剧院魅影', floor: '池座', row: 8, seatNo: 22, price: 680, rating: 5, note: '中文版首轮' },
+      { id: 'r4', date: '2024-01-12', theaterId: 't4', show: '茶馆', floor: '一层', row: 6, seatNo: 14, price: 280, rating: 5, note: '二刷，视角更偏' },
+      { id: 'r5', date: '2024-03-09', theaterId: 't3', show: '永不消逝的电波', floor: '一层', row: 9, seatNo: 7, price: 480, rating: 5, note: '中轴视角' },
+      { id: 'r6', date: '2024-04-05', theaterId: 't6', show: '枕头人', floor: '池座', row: 4, seatNo: 9, price: 260, rating: 4, note: '暗场效果好' },
+      { id: 'r7', date: '2024-05-18', theaterId: 't1', show: '图兰朵', floor: '一层', row: 12, seatNo: 18, price: 880, rating: 4, note: '歌剧厅' },
+      { id: 'r8', date: '2024-07-21', theaterId: 't5', show: '恋爱的犀牛', floor: '二层', row: 3, seatNo: 5, price: 220, rating: 5, note: '经典版' },
+      { id: 'r9', date: '2024-10-02', theaterId: 't8', show: '呼吸', floor: '二层', row: 2, seatNo: 8, price: 240, rating: 4, note: '' },
+      { id: 'r10', date: '2025-04-12', theaterId: 't1', show: '基督山伯爵', floor: '二层', row: 4, seatNo: 16, price: 380, rating: 4, note: '楼座第一排' },
+      { id: 'r11', date: '2025-06-08', theaterId: 't2', show: '犹太城', floor: '池座', row: 8, seatNo: 20, price: 380, rating: 5, note: '' },
+      { id: 'r12', date: '2025-09-14', theaterId: 't3', show: '只此青绿', floor: '一层', row: 11, seatNo: 3, price: 580, rating: 5, note: '中轴偏左' }
+    ]
+  };
+
+  var state = load();
+  var ui = {
+    view: 'overview',
+    keyword: '',
+    theaterFilter: '',
+    sortKey: 'date',
+    sortDir: 'desc',
+    seatTheaterId: null,
+    editingTicketId: null,
+    editingTheaterId: null
+  };
+
+  /* ---------------- helpers ---------------- */
+
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function uid(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function fmtDate(s) { return s ? String(s).replace(/-/g, '.') : '—'; }
+  function yen(n) { return (n === '' || n === null || n === undefined || Number(n) === 0) ? '—' : '¥' + n; }
+  function stars(n) { return '★'.repeat(Math.max(0, Math.min(5, Number(n) || 0))); }
+  function todayISO() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function () { t.classList.remove('show'); }, 2400);
+  }
+  function emptyBlock(title, text) {
+    return '<div class="empty"><strong>' + esc(title) + '</strong>' + esc(text) + '</div>';
+  }
+
+  /* ---------------- storage ---------------- */
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return clone(SEED);
+      var d = JSON.parse(raw);
+      if (!d || !Array.isArray(d.theaters) || !Array.isArray(d.records)) return clone(SEED);
+      return d;
+    } catch (e) {
+      return clone(SEED);
+    }
+  }
+  function persist() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {
+      toast('浏览器阻止了本地存储，请及时导出备份');
+    }
+  }
+
+  /* ---------------- domain ---------------- */
+
+  function theaterById(id) {
+    for (var i = 0; i < state.theaters.length; i++) if (state.theaters[i].id === id) return state.theaters[i];
+    return null;
+  }
+  function theaterName(id) {
+    var t = theaterById(id);
+    return t ? t.name : '未知剧场';
+  }
+  function recordsOf(id) {
+    return state.records.filter(function (r) { return r.theaterId === id; });
+  }
+  function seatText(r) { return r.floor + ' ' + r.row + '排 ' + r.seatNo + '号'; }
+  function recordById(id) {
+    for (var i = 0; i < state.records.length; i++) if (state.records[i].id === id) return state.records[i];
+    return null;
+  }
+  function defaultSeatTheaterId() {
+    var counts = {};
+    state.records.forEach(function (r) { counts[r.theaterId] = (counts[r.theaterId] || 0) + 1; });
+    var best = null, bestN = -1;
+    Object.keys(counts).forEach(function (id) {
+      if (counts[id] > bestN) { bestN = counts[id]; best = id; }
+    });
+    return best || (state.theaters[0] ? state.theaters[0].id : null);
+  }
+  function stats() {
+    var th = {}, shows = {};
+    state.records.forEach(function (r) {
+      th[r.theaterId] = (th[r.theaterId] || 0) + 1;
+      shows[r.show] = 1;
+    });
+    var top = null, topN = 0;
+    Object.keys(th).forEach(function (id) { if (th[id] > topN) { topN = th[id]; top = id; } });
+    return {
+      total: state.records.length,
+      theaters: Object.keys(th).length,
+      shows: Object.keys(shows).length,
+      topName: top ? theaterName(top) : '—',
+      topCount: topN
+    };
+  }
+
+  function filteredRecords() {
+    var kw = ui.keyword.trim().toLowerCase();
+    var list = state.records.filter(function (r) {
+      if (ui.theaterFilter && r.theaterId !== ui.theaterFilter) return false;
+      if (!kw) return true;
+      var hay = [r.show, r.note, r.date, theaterName(r.theaterId), r.floor, r.row + '排', r.seatNo + '号', r.floor + ' ' + r.row + '排 ' + r.seatNo + '号'].join(' ').toLowerCase();
+      return hay.indexOf(kw) > -1;
+    });
+    var dir = ui.sortDir === 'asc' ? 1 : -1;
+    var key = ui.sortKey;
+    list.sort(function (a, b) {
+      var va, vb;
+      if (key === 'theater') { va = theaterName(a.theaterId); vb = theaterName(b.theaterId); }
+      else if (key === 'show') { va = a.show; vb = b.show; }
+      else if (key === 'price') { va = Number(a.price) || 0; vb = Number(b.price) || 0; }
+      else if (key === 'rating') { va = Number(a.rating) || 0; vb = Number(b.rating) || 0; }
+      else { va = a.date; vb = b.date; }
+      if (typeof va === 'string') return va.localeCompare(vb, 'zh-CN') * dir;
+      return (va - vb) * dir;
+    });
+    return list;
+  }
+
+  /* ---------------- overview ---------------- */
+
+  function renderOverview() {
+    var st = stats();
+    $('#statGrid').innerHTML = [
+      statTile(String(st.total), '观剧场次', false),
+      statTile(String(st.theaters), '到访剧场', false),
+      statTile(String(st.shows), '不同剧目', false),
+      statTile(st.topName, st.topCount ? '最常去的剧场 · ' + st.topCount + ' 场' : '最常去的剧场', true)
+    ].join('');
+    renderBars();
+    renderDonut();
+    renderRecent();
+  }
+
+  function statTile(num, label, accent) {
+    return '<div class="stat' + (accent ? ' accent' : '') + '"><div class="num">' + esc(num) + '</div><div class="label">' + esc(label) + '</div></div>';
+  }
+
+  function renderBars() {
+    var counts = {};
+    state.records.forEach(function (r) { counts[r.theaterId] = (counts[r.theaterId] || 0) + 1; });
+    var arr = Object.keys(counts).map(function (id) {
+      return { name: theaterName(id), n: counts[id] };
+    }).sort(function (a, b) { return b.n - a.n; });
+    var box = $('#theaterBars');
+    if (!arr.length) {
+      box.innerHTML = emptyBlock('还没有票根', '先记一张票根，这里会出现各剧场的场次统计。');
+      return;
+    }
+    var max = arr[0].n;
+    box.innerHTML = arr.map(function (x) {
+      var w = Math.max(6, Math.round(x.n / max * 100));
+      return '<div class="bar">' +
+        '<span class="name" title="' + esc(x.name) + '">' + esc(x.name) + '</span>' +
+        '<span class="track"><span class="fill" style="width:' + w + '%"></span></span>' +
+        '<span class="n">' + x.n + '</span></div>';
+    }).join('');
+  }
+
+  function renderDonut() {
+    var byYear = {};
+    state.records.forEach(function (r) {
+      var y = String(r.date || '').slice(0, 4) || '未知';
+      byYear[y] = (byYear[y] || 0) + 1;
+    });
+    var years = Object.keys(byYear).sort();
+    var total = state.records.length;
+    var svg = $('#yearDonut');
+    var legend = $('#yearLegend');
+    if (!total) {
+      svg.innerHTML = '';
+      legend.innerHTML = '<li class="hint">还没有票根记录</li>';
+      return;
+    }
+    var C = 2 * Math.PI * 54;
+    var offset = 0;
+    var circles = '';
+    years.forEach(function (y, i) {
+      var len = byYear[y] / total * C;
+      circles += '<circle cx="70" cy="70" r="54" fill="none" stroke="' + COLORS[i % COLORS.length] +
+        '" stroke-width="14" stroke-dasharray="' + len + ' ' + (C - len) +
+        '" stroke-dashoffset="' + (-offset) + '" transform="rotate(-90 70 70)"></circle>';
+      offset += len;
+    });
+    svg.innerHTML =
+      '<circle cx="70" cy="70" r="54" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="14"></circle>' +
+      circles +
+      '<text x="70" y="67" text-anchor="middle" fill="#f2e9db" font-size="26" font-family="Georgia,serif">' + total + '</text>' +
+      '<text x="70" y="86" text-anchor="middle" fill="#a99e8d" font-size="10">场</text>';
+    legend.innerHTML = years.map(function (y, i) {
+      var pct = Math.round(byYear[y] / total * 100);
+      return '<li><span class="dot" style="background:' + COLORS[i % COLORS.length] + '"></span>' +
+        '<span>' + esc(y) + '</span><span class="val">' + byYear[y] + ' 场 · ' + pct + '%</span></li>';
+    }).join('');
+  }
+
+  function renderRecent() {
+    var list = state.records.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 5);
+    var box = $('#recentList');
+    if (!list.length) {
+      box.innerHTML = '<li>' + emptyBlock('还没有票根', '点击右上角「记一张票根」，开始你的剧场档案。') + '</li>';
+      return;
+    }
+    box.innerHTML = list.map(function (r) {
+      return '<li>' +
+        '<span class="date">' + fmtDate(r.date) + '</span>' +
+        '<div><div class="show">' + esc(r.show) + '</div>' +
+        '<div class="meta">' + esc(theaterName(r.theaterId)) + ' · ' + esc(seatText(r)) + '</div></div>' +
+        '<span class="stars">' + (stars(r.rating) || '<span class="hint">未评分</span>') + '</span>' +
+        '</li>';
+    }).join('');
+  }
+
+  /* ---------------- records ---------------- */
+
+  function renderRecordFilters() {
+    var sel = $('#theaterFilter');
+    var counts = {};
+    state.records.forEach(function (r) { counts[r.theaterId] = (counts[r.theaterId] || 0) + 1; });
+    var opts = '<option value="">全部剧场</option>' + state.theaters.map(function (t) {
+      var n = counts[t.id] || 0;
+      return '<option value="' + t.id + '">' + esc(t.name) + (n ? '（' + n + '）' : '') + '</option>';
+    }).join('');
+    sel.innerHTML = opts;
+    sel.value = ui.theaterFilter || '';
+  }
+
+  function syncSortArrows() {
+    $$('#recordsTable thead th[data-sort]').forEach(function (th) {
+      var arrow = $('.arrow', th);
+      if (!arrow) return;
+      arrow.textContent = th.getAttribute('data-sort') === ui.sortKey ? (ui.sortDir === 'asc' ? '↑' : '↓') : '';
+    });
+  }
+
+  function renderRecords() {
+    var list = filteredRecords();
+    var body = $('#recordsBody');
+    syncSortArrows();
+    if (!list.length) {
+      var msg = state.records.length
+        ? emptyBlock('没有匹配的票根', '换个关键词或清空剧场筛选试试。')
+        : emptyBlock('票根库还是空的', '点击「新增票根」，把第一场戏记下来。');
+      body.innerHTML = '<tr><td colspan="8">' + msg + '</td></tr>';
+    } else {
+      body.innerHTML = list.map(function (r) {
+        return '<tr>' +
+          '<td class="mono">' + fmtDate(r.date) + '</td>' +
+          '<td>' + esc(theaterName(r.theaterId)) + '</td>' +
+          '<td class="show-title">' + esc(r.show) + '</td>' +
+          '<td><span class="seat-badge">' + esc(seatText(r)) + '</span></td>' +
+          '<td class="mono">' + yen(r.price) + '</td>' +
+          '<td class="stars">' + (stars(r.rating) || '<span class="hint">—</span>') + '</td>' +
+          '<td class="note" title="' + esc(r.note || '') + '">' + (r.note ? esc(r.note) : '<span class="hint">—</span>') + '</td>' +
+          '<td><div class="actions">' +
+          '<button class="icon-btn" type="button" data-act="seat" data-id="' + r.id + '">看座位</button>' +
+          '<button class="icon-btn" type="button" data-act="edit" data-id="' + r.id + '">编辑</button>' +
+          '<button class="icon-btn" type="button" data-act="del" data-id="' + r.id + '">删除</button>' +
+          '</div></td></tr>';
+      }).join('');
+    }
+    var extra = '';
+    if (ui.keyword) extra = ' · 关键词「' + ui.keyword + '」';
+    if (ui.theaterFilter && theaterById(ui.theaterFilter)) extra += ' · ' + theaterName(ui.theaterFilter);
+    $('#recordsCount').textContent = '共 ' + list.length + ' 条票根' + extra + ' · 点击表头可排序';
+  }
+
+  /* ---------------- seats ---------------- */
+
+  function renderSeatControls() {
+    var sel = $('#seatTheater');
+    if (!ui.seatTheaterId || !theaterById(ui.seatTheaterId)) ui.seatTheaterId = defaultSeatTheaterId();
+    var counts = {};
+    state.records.forEach(function (r) { counts[r.theaterId] = (counts[r.theaterId] || 0) + 1; });
+    sel.innerHTML = state.theaters.map(function (t) {
+      return '<option value="' + t.id + '">' + esc(t.name) + (counts[t.id] ? '（' + counts[t.id] + ' 场）' : '') + '</option>';
+    }).join('');
+    sel.value = ui.seatTheaterId || '';
+  }
+
+  function renderSeatView() {
+    if (!ui.seatTheaterId) { ui.seatTheaterId = defaultSeatTheaterId(); }
+    var t = theaterById(ui.seatTheaterId);
+    var list = t ? recordsOf(t.id).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }) : [];
+    var summary = $('#seatSummary');
+    var wrap = $('#seatMapWrap');
+    var body = $('#seatBody');
+    var legend = $('#seatLegend');
+    var tableWrap = $('#seatTableWrap');
+
+    if (!t) {
+      summary.textContent = '还没有剧场';
+      wrap.innerHTML = emptyBlock('还没有剧场', '先去「剧场库」添加一座剧场。');
+      legend.hidden = true;
+      tableWrap.hidden = true;
+      return;
+    }
+
+    var groups = {};
+    list.forEach(function (r) {
+      var key = r.floor + '|' + r.row;
+      if (!groups[key]) groups[key] = { floor: r.floor, row: Number(r.row), seats: {} };
+      var key2 = String(r.seatNo);
+      var s = groups[key].seats[key2] || { no: Number(r.seatNo), count: 0, shows: [] };
+      s.count += 1;
+      s.shows.push(r.show);
+      groups[key].seats[key2] = s;
+    });
+    var rows = Object.keys(groups).map(function (k) { return groups[k]; });
+    rows.sort(function (a, b) {
+      var fa = FLOOR_ORDER[a.floor] === undefined ? 9 : FLOOR_ORDER[a.floor];
+      var fb = FLOOR_ORDER[b.floor] === undefined ? 9 : FLOOR_ORDER[b.floor];
+      if (fa !== fb) return fa - fb;
+      return a.row - b.row;
+    });
+
+    var distinctSeats = 0;
+    rows.forEach(function (g) { distinctSeats += Object.keys(g.seats).length; });
+
+    summary.innerHTML = '已观 <b>' + list.length + '</b> 场 · 坐过 <b>' + distinctSeats + '</b> 个座位 · 覆盖 <b>' + rows.length + '</b> 排';
+
+    if (!list.length) {
+      wrap.innerHTML = '<div class="seatmap" style="text-align:center;padding:36px 20px">' +
+        '<div class="empty" style="padding:0">' +
+        '<strong>这里还没有你的座位</strong>' +
+        '在「票根库」为「' + esc(t.name) + '」新增一条票根，' +
+        '或直接从这里记一张。<br>' +
+        '<button class="btn primary" type="button" data-act="add-for-theater" data-id="' + t.id + '">＋ 为这座剧场记一张票根</button>' +
+        '</div></div>';
+      legend.hidden = true;
+      tableWrap.hidden = true;
+      return;
+    }
+
+    legend.hidden = false;
+    tableWrap.hidden = false;
+
+    wrap.innerHTML = '<div class="seatmap">' + rows.map(function (g) {
+      var chipHtml = Object.keys(g.seats).map(function (k) {
+        var s = g.seats[k];
+        return '<span class="seat' + (s.count > 1 ? ' repeat' : '') + '" title="' + esc(s.shows.join(' / ')) + '">' +
+          '<span class="no">' + s.no + '号</span>' +
+          (s.count > 1 ? '<span class="cnt">×' + s.count + '</span>' : '') +
+          '</span>';
+      }).join('');
+      return '<div class="seat-row"><span class="seat-row-label">' + esc(g.floor) + ' · ' + g.row + '排</span>' +
+        '<div class="seat-chips">' + chipHtml + '</div></div>';
+    }).join('') + '</div>';
+
+    body.innerHTML = list.map(function (r) {
+      return '<tr>' +
+        '<td class="mono">' + fmtDate(r.date) + '</td>' +
+        '<td class="show-title">' + esc(r.show) + '</td>' +
+        '<td><span class="seat-badge">' + esc(seatText(r)) + '</span></td>' +
+        '<td class="mono">' + yen(r.price) + '</td>' +
+        '<td class="note" title="' + esc(r.note || '') + '">' + (r.note ? esc(r.note) : '<span class="hint">—</span>') + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  /* ---------------- theaters ---------------- */
+
+  function renderTheaters() {
+    var body = $('#theaterBody');
+    var rows = state.theaters.map(function (t) {
+      var list = recordsOf(t.id).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      var seats = {};
+      list.forEach(function (r) { seats[r.floor + '|' + r.row + '|' + r.seatNo] = 1; });
+      return {
+        id: t.id,
+        name: t.name,
+        meta: (t.city || '') + (t.area ? ' · ' + t.area : ''),
+        type: t.type || '其他',
+        visits: list.length,
+        seats: Object.keys(seats).length,
+        last: list.length ? list[0].date : ''
+      };
+    });
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7">' + emptyBlock('剧场库是空的', '点击「添加剧场」开始建立你的剧场地图。') + '</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(function (t) {
+      return '<tr>' +
+        '<td class="show-title">' + esc(t.name) + '</td>' +
+        '<td>' + esc(t.meta) + '</td>' +
+        '<td>' + esc(t.type) + '</td>' +
+        '<td class="mono">' + t.visits + '</td>' +
+        '<td class="mono">' + t.seats + '</td>' +
+        '<td class="mono">' + (t.last ? fmtDate(t.last) : '—') + '</td>' +
+        '<td><div class="actions">' +
+        '<button class="icon-btn" type="button" data-th="edit" data-id="' + t.id + '">编辑</button>' +
+        '<button class="icon-btn" type="button" data-th="del" data-id="' + t.id + '"' +
+        (t.visits ? ' disabled title="该剧场还有 ' + t.visits + ' 条票根，先处理票根后再删除"' : '') + '>删除</button>' +
+        '</div></td></tr>';
+    }).join('');
+  }
+
+  function renderExportPreview() {
+    $('#exportPreview').value = buildSummary();
+  }
+
+  function buildSummary() {
+    var lines = ['剧场票根汇总 · 共 ' + state.records.length + ' 场 · ' + state.theaters.length + ' 座剧场', ''];
+    state.theaters.forEach(function (t) {
+      var list = recordsOf(t.id).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      if (!list.length) return;
+      lines.push('【' + t.name + '】' + [t.city, t.area, t.type].filter(Boolean).join(' · ') + ' · ' + list.length + ' 场');
+      list.forEach(function (r) {
+        lines.push('  ' + fmtDate(r.date) + '  ' + r.show + '  ' + seatText(r) +
+          (r.price ? '  ¥' + r.price : '') +
+          (r.rating ? '  ' + stars(r.rating) : '') +
+          (r.note ? '  ' + r.note : ''));
+      });
+      lines.push('');
+    });
+    if (!state.records.length) lines.push('暂无票根记录。');
+    return lines.join('\n');
+  }
+
+  /* ---------------- ticket dialog ---------------- */
+
+  function fillTheaterOptions() {
+    var sel = $('#tTheater');
+    sel.innerHTML = state.theaters.map(function (t) {
+      return '<option value="' + t.id + '">' + esc(t.name) + (t.area ? ' · ' + t.area : '') + '</option>';
+    }).join('');
+  }
+
+  function openTicketDialog(record, presetTheaterId) {
+    if (!state.theaters.length) {
+      toast('请先在「剧场库」添加一座剧场');
+      switchView('theaters');
+      return;
+    }
+    ui.editingTicketId = record ? record.id : null;
+    $('#ticketDialogTitle').textContent = record ? '编辑票根' : '新增票根';
+    $('#ticketError').textContent = '';
+    fillTheaterOptions();
+    $('#tDate').value = record ? record.date : todayISO();
+    $('#tTheater').value = record ? record.theaterId : (presetTheaterId || ui.seatTheaterId || state.theaters[0].id);
+    $('#tShow').value = record ? record.show : '';
+    var floorSel = $('#tFloor');
+    if (record && record.floor && !Array.prototype.some.call(floorSel.options, function (o) { return o.value === record.floor; })) {
+      var extraOpt = document.createElement('option');
+      extraOpt.value = record.floor;
+      extraOpt.textContent = record.floor;
+      floorSel.appendChild(extraOpt);
+    }
+    floorSel.value = record ? record.floor : '一层';
+    $('#tRow').value = record ? record.row : 1;
+    $('#tSeat').value = record ? record.seatNo : 1;
+    $('#tPrice').value = record && record.price ? record.price : '';
+    $('#tRating').value = record ? String(record.rating || 5) : '5';
+    $('#tNote').value = record ? (record.note || '') : '';
+    var dlg = $('#ticketDialog');
+    if (typeof dlg.showModal === 'function') dlg.showModal();
+    else dlg.setAttribute('open', '');
+    setTimeout(function () { $('#tShow').focus(); }, 60);
+  }
+
+  function closeTicketDialog() {
+    var dlg = $('#ticketDialog');
+    if (typeof dlg.close === 'function') dlg.close();
+    else dlg.removeAttribute('open');
+    ui.editingTicketId = null;
+  }
+
+  function saveTicket(e) {
+    e.preventDefault();
+    var date = $('#tDate').value;
+    var theaterId = $('#tTheater').value;
+    var show = $('#tShow').value.trim();
+    var row = Number($('#tRow').value);
+    var seatNo = Number($('#tSeat').value);
+    var err = '';
+    if (!date) err = '请选择观剧日期';
+    else if (!theaterId) err = '请选择剧场';
+    else if (!show) err = '请填写剧目名称';
+    else if (!Number.isInteger(row) || row < 1) err = '排数需为不小于 1 的整数';
+    else if (!Number.isInteger(seatNo) || seatNo < 1) err = '座位号需为不小于 1 的整数';
+    if (err) { $('#ticketError').textContent = err; return; }
+
+    var rec = {
+      id: ui.editingTicketId || uid('r'),
+      date: date,
+      theaterId: theaterId,
+      show: show,
+      floor: $('#tFloor').value,
+      row: row,
+      seatNo: seatNo,
+      price: Math.max(0, Number($('#tPrice').value) || 0),
+      rating: Math.min(5, Math.max(1, Number($('#tRating').value) || 5)),
+      note: $('#tNote').value.trim()
+    };
+
+    if (ui.editingTicketId) {
+      state.records = state.records.map(function (r) { return r.id === rec.id ? rec : r; });
+    } else {
+      state.records.push(rec);
+    }
+    persist();
+    closeTicketDialog();
+    refresh();
+    toast('已保存：' + rec.show);
+  }
+
+  /* ---------------- theater form ---------------- */
+
+  function openTheaterForm(theater) {
+    ui.editingTheaterId = theater ? theater.id : null;
+    $('#theaterForm').hidden = false;
+    $('#thName').value = theater ? theater.name : '';
+    $('#thCity').value = theater ? (theater.city || '北京') : '北京';
+    $('#thArea').value = theater ? (theater.area || '') : '';
+    $('#thType').value = theater ? (theater.type || '综合剧场') : '综合剧场';
+    $('#thSubmit').textContent = theater ? '保存修改' : '保存剧场';
+    $('#thName').focus();
+    $('#theaterForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function closeTheaterForm() {
+    ui.editingTheaterId = null;
+    $('#theaterForm').hidden = true;
+    $('#theaterForm').reset();
+    $('#thCity').value = '北京';
+    $('#thSubmit').textContent = '保存剧场';
+  }
+
+  function saveTheater(e) {
+    e.preventDefault();
+    var name = $('#thName').value.trim();
+    if (!name) { toast('请填写剧场名称'); return; }
+    var dup = state.theaters.some(function (t) {
+      return t.name === name && t.id !== ui.editingTheaterId;
+    });
+    if (dup) { toast('剧场库里已经有同名剧场'); return; }
+    var payload = {
+      name: name,
+      city: $('#thCity').value.trim() || '北京',
+      area: $('#thArea').value.trim(),
+      type: $('#thType').value
+    };
+    if (ui.editingTheaterId) {
+      state.theaters = state.theaters.map(function (t) {
+        if (t.id !== ui.editingTheaterId) return t;
+        return { id: t.id, name: payload.name, city: payload.city, area: payload.area, type: payload.type };
+      });
+      toast('已更新剧场');
+    } else {
+      state.theaters.push({ id: uid('t'), name: payload.name, city: payload.city, area: payload.area, type: payload.type });
+      toast('已添加：' + payload.name);
+    }
+    persist();
+    closeTheaterForm();
+    refresh();
+  }
+
+  /* ---------------- views ---------------- */
+
+  function switchView(view, scroll) {
+    ui.view = view;
+    $$('.tab').forEach(function (b) {
+      var on = b.getAttribute('data-view') === view;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    $$('.view').forEach(function (sec) { sec.hidden = sec.id !== 'view-' + view; });
+    renderCurrent();
+    if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderCurrent() {
+    if (ui.view === 'overview') renderOverview();
+    else if (ui.view === 'records') { renderRecordFilters(); renderRecords(); }
+    else if (ui.view === 'seats') { renderSeatControls(); renderSeatView(); }
+    else if (ui.view === 'theaters') { renderTheaters(); renderExportPreview(); }
+  }
+
+  function refresh() {
+    renderOverview();
+    renderRecordFilters();
+    renderRecords();
+    renderSeatControls();
+    renderSeatView();
+    renderTheaters();
+    renderExportPreview();
+  }
+
+  /* ---------------- import / export ---------------- */
+
+  function download(filename, content, type) {
+    var blob = new Blob([content], { type: type });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function importBackup(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(String(reader.result));
+        if (!data || !Array.isArray(data.theaters) || !Array.isArray(data.records)) {
+          toast('文件格式不对：缺少 theaters / records');
+          return;
+        }
+        var ok = window.confirm('导入 ' + data.theaters.length + ' 座剧场、' + data.records.length + ' 条票根，将覆盖当前数据。继续？');
+        if (!ok) return;
+        var theaterIds = {};
+        var theaters = data.theaters.map(function (t) {
+          var id = t.id && !theaterIds[t.id] ? t.id : uid('t');
+          theaterIds[id] = true;
+          return {
+            id: id,
+            name: t.name || '未命名剧场',
+            city: t.city || '',
+            area: t.area || '',
+            type: t.type || '其他'
+          };
+        });
+        var fallbackByKey = {};
+        function ensureFallback(key) {
+          if (fallbackByKey[key]) return fallbackByKey[key];
+          var fallback = { id: uid('t'), name: '未指定剧场', city: '', area: '', type: '其他' };
+          theaters.push(fallback);
+          theaterIds[fallback.id] = true;
+          fallbackByKey[key] = fallback.id;
+          return fallback.id;
+        }
+        var recordIds = {};
+        var records = data.records.map(function (r) {
+          var id = r.id && !recordIds[r.id] ? r.id : uid('r');
+          recordIds[id] = true;
+          var rawTheaterId = r.theaterId || '';
+          var theaterId = rawTheaterId && theaterIds[rawTheaterId] ? rawTheaterId : ensureFallback(rawTheaterId || '__none__');
+          return {
+            id: id,
+            date: r.date || '',
+            theaterId: theaterId,
+            show: r.show || '未命名剧目',
+            floor: r.floor || '一层',
+            row: Math.max(1, Math.floor(Number(r.row) || 1)),
+            seatNo: Math.max(1, Math.floor(Number(r.seatNo) || 1)),
+            price: Math.max(0, Number(r.price) || 0),
+            rating: Math.min(5, Math.max(1, Number(r.rating) || 5)),
+            note: r.note || ''
+          };
+        });
+        state = { theaters: theaters, records: records };
+        ui.seatTheaterId = null;
+        ui.theaterFilter = '';
+        ui.keyword = '';
+        $('#searchInput').value = '';
+        persist();
+        refresh();
+        toast('导入完成');
+      } catch (e) {
+        toast('导入失败：不是有效的 JSON 备份');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function copySummary() {
+    var text = buildSummary();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('汇总文本已复制'); }, function () { toast('复制失败，请手动选择文本'); });
+    } else {
+      var ta = $('#exportPreview');
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); toast('汇总文本已复制'); }
+      catch (e) { toast('复制失败，请手动选择文本'); }
+    }
+  }
+
+  /* ---------------- events ---------------- */
+
+  function init() {
+    renderSeatControls();
+    renderSeatView();
+    refresh();
+
+    $$('.tab').forEach(function (b) {
+      b.addEventListener('click', function () { switchView(b.getAttribute('data-view'), false); });
+    });
+
+    $('#btnAdd').addEventListener('click', function () { openTicketDialog(null); });
+    $('#btnAdd2').addEventListener('click', function () { openTicketDialog(null); });
+
+    document.addEventListener('click', function (e) {
+      var go = e.target.closest('[data-go]');
+      if (go) switchView(go.getAttribute('data-go'), false);
+    });
+
+    $('#searchInput').addEventListener('input', function (e) {
+      ui.keyword = e.target.value;
+      renderRecords();
+    });
+    $('#theaterFilter').addEventListener('change', function (e) {
+      ui.theaterFilter = e.target.value;
+      renderRecords();
+    });
+
+    $('#recordsTable').addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-act]');
+      if (btn) {
+        var rec = recordById(btn.getAttribute('data-id'));
+        if (!rec) return;
+        var act = btn.getAttribute('data-act');
+        if (act === 'edit') openTicketDialog(rec);
+        else if (act === 'seat') {
+          ui.seatTheaterId = rec.theaterId;
+          switchView('seats', true);
+        } else if (act === 'del') {
+          var ok = window.confirm('删除「' + rec.show + '」' + fmtDate(rec.date) + ' 这张票根？');
+          if (!ok) return;
+          state.records = state.records.filter(function (r) { return r.id !== rec.id; });
+          persist();
+          refresh();
+          toast('已删除');
+        }
+        return;
+      }
+      var th = e.target.closest('#recordsTable thead th[data-sort]');
+      if (th) {
+        var key = th.getAttribute('data-sort');
+        if (ui.sortKey === key) ui.sortDir = ui.sortDir === 'asc' ? 'desc' : 'asc';
+        else { ui.sortKey = key; ui.sortDir = key === 'date' ? 'desc' : 'asc'; }
+        renderRecords();
+      }
+    });
+
+    $('#seatTheater').addEventListener('change', function (e) {
+      ui.seatTheaterId = e.target.value;
+      renderSeatView();
+    });
+
+    $('#seatMapWrap').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act="add-for-theater"]');
+      if (btn) openTicketDialog(null, btn.getAttribute('data-id'));
+    });
+
+    $('#ticketForm').addEventListener('submit', saveTicket);
+    $('#ticketClose').addEventListener('click', closeTicketDialog);
+    $('#ticketCancel').addEventListener('click', closeTicketDialog);
+    $('#ticketDialog').addEventListener('close', function () { ui.editingTicketId = null; });
+    $('#ticketDialog').addEventListener('click', function (e) {
+      if (e.target === $('#ticketDialog')) closeTicketDialog();
+    });
+
+    $('#btnAddTheater').addEventListener('click', function () {
+      if ($('#theaterForm').hidden) openTheaterForm(null);
+      else closeTheaterForm();
+    });
+    $('#thCancel').addEventListener('click', closeTheaterForm);
+    $('#theaterForm').addEventListener('submit', saveTheater);
+
+    $('#theaterTable').addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-th]');
+      if (!btn || btn.disabled) return;
+      var id = btn.getAttribute('data-id');
+      var t = theaterById(id);
+      if (!t) return;
+      if (btn.getAttribute('data-th') === 'edit') {
+        openTheaterForm(t);
+      } else if (btn.getAttribute('data-th') === 'del') {
+        if (recordsOf(id).length) { toast('该剧场还有票根，先删除票根'); return; }
+        var ok = window.confirm('从剧场库删除「' + t.name + '」？');
+        if (!ok) return;
+        state.theaters = state.theaters.filter(function (x) { return x.id !== id; });
+        if (ui.seatTheaterId === id) ui.seatTheaterId = null;
+        if (ui.theaterFilter === id) ui.theaterFilter = '';
+        persist();
+        refresh();
+        toast('已删除剧场');
+      }
+    });
+
+    $('#btnExport').addEventListener('click', function () {
+      download('theater-tickets-backup-' + todayISO() + '.json', JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), theaters: state.theaters, records: state.records }, null, 2), 'application/json');
+      toast('备份已下载');
+    });
+    $('#btnDownloadJson').addEventListener('click', function () {
+      download('theater-tickets-backup-' + todayISO() + '.json', JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), theaters: state.theaters, records: state.records }, null, 2), 'application/json');
+      toast('备份已下载');
+    });
+    $('#btnDownloadText').addEventListener('click', function () {
+      download('剧场票根汇总-' + todayISO() + '.txt', buildSummary(), 'text/plain;charset=utf-8');
+      toast('汇总文本已下载');
+    });
+    $('#btnCopyText').addEventListener('click', copySummary);
+    $('#importInput').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) importBackup(f);
+      e.target.value = '';
+    });
+    $('#btnReset').addEventListener('click', function () {
+      var ok = window.confirm('恢复示例数据会覆盖当前所有剧场与票根，确定继续？');
+      if (!ok) return;
+      state = clone(SEED);
+      ui.seatTheaterId = null;
+      ui.keyword = '';
+      ui.theaterFilter = '';
+      $('#searchInput').value = '';
+      persist();
+      refresh();
+      toast('已恢复示例数据');
+    });
+
+    document.addEventListener('keydown', function (e) {
+      var tag = (document.activeElement && document.activeElement.tagName) || '';
+      if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        e.preventDefault();
+        switchView('records', false);
+        $('#searchInput').focus();
+      }
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
